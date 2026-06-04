@@ -1,0 +1,145 @@
+name: api-contract plugin CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-plugin:
+    name: Validate plugin structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate plugin.json exists and is valid JSON
+        run: |
+          if [ ! -f ".claude-plugin/plugin.json" ]; then
+            echo "ERROR: .claude-plugin/plugin.json not found"
+            exit 1
+          fi
+          python3 -c "
+          import json, sys
+          with open('.claude-plugin/plugin.json') as f:
+              data = json.load(f)
+          required = ['name', 'version', 'author', 'skills', 'commands']
+          for field in required:
+              if field not in data:
+                  print(f'ERROR: plugin.json missing required field: {field}')
+                  sys.exit(1)
+          if not isinstance(data['skills'], list) or len(data['skills']) == 0:
+              print('ERROR: plugin.json skills must be a non-empty array')
+              sys.exit(1)
+          if not isinstance(data['commands'], list) or len(data['commands']) == 0:
+              print('ERROR: plugin.json commands must be a non-empty array')
+              sys.exit(1)
+          print('plugin.json: OK')
+          print(f'  name: {data[\"name\"]}')
+          print(f'  version: {data[\"version\"]}')
+          print(f'  skills: {len(data[\"skills\"])}')
+          print(f'  commands: {len(data[\"commands\"])}')
+          "
+
+      - name: Validate marketplace.json exists and is valid JSON
+        run: |
+          if [ ! -f ".claude-plugin/marketplace.json" ]; then
+            echo "ERROR: .claude-plugin/marketplace.json not found"
+            exit 1
+          fi
+          python3 -c "
+          import json, sys
+          with open('.claude-plugin/marketplace.json') as f:
+              data = json.load(f)
+          required = ['name', 'version', 'keywords']
+          for field in required:
+              if field not in data:
+                  print(f'ERROR: marketplace.json missing required field: {field}')
+                  sys.exit(1)
+          if not isinstance(data['keywords'], list) or len(data['keywords']) == 0:
+              print('ERROR: marketplace.json keywords must be a non-empty array')
+              sys.exit(1)
+          print('marketplace.json: OK')
+          "
+
+      - name: Check all skill files exist
+        run: |
+          python3 -c "
+          import json, sys, os
+          with open('.claude-plugin/plugin.json') as f:
+              data = json.load(f)
+          missing = []
+          for skill_path in data['skills']:
+              if not os.path.isfile(skill_path):
+                  missing.append(skill_path)
+          if missing:
+              print('ERROR: Missing skill files:')
+              for path in missing:
+                  print(f'  {path}')
+              sys.exit(1)
+          print(f'All {len(data[\"skills\"])} skill files present: OK')
+          "
+
+      - name: Check all command files exist
+        run: |
+          python3 -c "
+          import json, sys, os
+          with open('.claude-plugin/plugin.json') as f:
+              data = json.load(f)
+          missing = []
+          for cmd_path in data['commands']:
+              if not os.path.isfile(cmd_path):
+                  missing.append(cmd_path)
+          if missing:
+              print('ERROR: Missing command files:')
+              for path in missing:
+                  print(f'  {path}')
+              sys.exit(1)
+          print(f'All {len(data[\"commands\"])} command files present: OK')
+          "
+
+      - name: Check skill files have YAML frontmatter
+        run: |
+          python3 -c "
+          import json, sys, os
+          with open('.claude-plugin/plugin.json') as f:
+              data = json.load(f)
+          errors = []
+          for skill_path in data['skills']:
+              with open(skill_path) as f:
+                  content = f.read()
+              if not content.startswith('---'):
+                  errors.append(f'{skill_path}: missing YAML frontmatter (must start with ---)')
+          if errors:
+              for e in errors:
+                  print(f'ERROR: {e}')
+              sys.exit(1)
+          print('All skill files have frontmatter: OK')
+          "
+
+      - name: Check command files have h1 heading
+        run: |
+          python3 -c "
+          import json, sys, os, re
+          with open('.claude-plugin/plugin.json') as f:
+              data = json.load(f)
+          errors = []
+          for cmd_path in data['commands']:
+              with open(cmd_path) as f:
+                  content = f.read()
+              if not re.search(r'^# /', content, re.MULTILINE):
+                  errors.append(f'{cmd_path}: command file must have a # /command-name heading')
+          if errors:
+              for e in errors:
+                  print(f'ERROR: {e}')
+              sys.exit(1)
+          print('All command files have /command heading: OK')
+          "
+
+      - name: Report
+        run: |
+          echo ""
+          echo "Plugin validation passed."
+          echo "  Plugin: $(python3 -c \"import json; d=json.load(open('.claude-plugin/plugin.json')); print(d['name'] + ' v' + d['version'])\")"

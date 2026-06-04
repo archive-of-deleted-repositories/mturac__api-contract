@@ -1,0 +1,23 @@
+{
+  "name": "api-contract",
+  "version": "0.1.0",
+  "author": "mturac",
+  "license": "MIT",
+  "description": "Validates that frontend API calls match backend schemas, detects breaking changes before deploy, and generates typed clients.",
+  "keywords": [
+    "api",
+    "openapi",
+    "contract-testing",
+    "typescript",
+    "breaking-changes",
+    "schema"
+  ],
+  "categories": [
+    "developer-tools",
+    "testing",
+    "api"
+  ],
+  "engines": {
+    "claude-code": ">=1.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "api-contract",
+  "version": "0.1.0",
+  "author": {
+    "name": "mturac"
+  },
+  "description": "Validates that frontend API calls match backend schemas, detects breaking changes before deploy, and generates typed clients.",
+  "skills": [
+    "skills/contract-validate",
+    "skills/contract-diff",
+    "skills/contract-generate"
+  ],
+  "commands": [
+    "commands/api-contract.md",
+    "commands/api-contract-validate.md",
+    "commands/api-contract-diff.md",
+    "commands/api-contract-generate.md"
+  ]
+}
